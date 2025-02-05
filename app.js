@@ -23,7 +23,7 @@ connectRabbitMQ().then(({ channel }) => {
         // notification processing
         try {
           const { message, email } = data;
-          const { sendEmail, saveNotification } = require('./src/services');
+          //const { sendEmail, saveNotification } = require('./src/services');
           await sendEmail(message, email);
           await saveNotification({ message, email, status: 'Sent' });
           console.log('Notification processed successfully.');
@@ -36,6 +36,8 @@ connectRabbitMQ().then(({ channel }) => {
     });
   }
 });
+const { sendEmail } = require('./src/services/emailService');
+const { saveNotification } = require('./src/services/notificationService');
 
 // MQTT listener
 mqttClient.on('message', async (topic, message) => {
@@ -45,7 +47,6 @@ mqttClient.on('message', async (topic, message) => {
   try {
     const data = JSON.parse(message.toString());
     const { message: msgContent, email } = data;
-    const { sendEmail, saveNotification } = require('./src/services');
     await sendEmail(msgContent, email);
     await saveNotification({ message: msgContent, email, status: 'Sent' });
     console.log('MQTT Notification processed successfully.');

@@ -2,8 +2,9 @@
 const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema({
-  message: String,
-  email: String,
+  orderId: String,
+  amount: String,
+  currency: String,
   status: String,
   createdAt: { type: Date, default: Date.now },
 });
