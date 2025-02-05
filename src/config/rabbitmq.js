@@ -1,3 +1,4 @@
+//RabbitMQ Conection
 const amqp = require('amqplib');
 
 const connectRabbitMQ = async () => {

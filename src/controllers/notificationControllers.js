@@ -1,3 +1,4 @@
+//Processing Logic
 const { saveNotification } = require('../services/notificationService');
 const { sendEmail } = require('../services/emailService');
 const processNotification = async (req, res) => {

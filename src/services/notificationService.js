@@ -1,3 +1,4 @@
+//Servicio para guardar notificaciones
 const Notification = require('../models/Notification');
 
 const saveNotification = async (data) => {
