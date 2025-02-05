@@ -5,19 +5,54 @@ const connectDB = require('./src/config/database');
 const mqttClient = require('./src/config/mqtt');
 const connectRabbitMQ = require('./src/config/rabbitmq');
 const notificationRoutes = require('./src/routes/notificationRoutes');
-//const notificationController = require('./src/controllers/notificationControllers');
-//const mqtt = require('mqtt');
+
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 connectDB();
-connectRabbitMQ();
+// rabbit mq conection
+connectRabbitMQ().then(({ channel }) => {
+  if (channel) {
+    console.log('Listening for messages on the "notifications" queue...');
+    channel.consume('notifications', async (msg) => {
+      if (msg) {
+        const data = JSON.parse(msg.content.toString());
+        console.log('Received message from RabbitMQ:', data);
 
-app.use('/notifications', notificationRoutes);
+        // notification processing
+        try {
+          const { message, email } = data;
+          const { sendEmail, saveNotification } = require('./src/services');
+          await sendEmail(message, email);
+          await saveNotification({ message, email, status: 'Sent' });
+          console.log('Notification processed successfully.');
+        } catch (error) {
+          console.error('Error processing notification:', error.message);
+        } finally {
+          channel.ack(msg); // process check
+        }
+      }
+    });
+  }
+});
 
+// MQTT listener
 mqttClient.on('message', async (topic, message) => {
   console.log('Received MQTT message:', message.toString());
+
+  // MQTT message processing
+  try {
+    const data = JSON.parse(message.toString());
+    const { message: msgContent, email } = data;
+    const { sendEmail, saveNotification } = require('./src/services');
+    await sendEmail(msgContent, email);
+    await saveNotification({ message: msgContent, email, status: 'Sent' });
+    console.log('MQTT Notification processed successfully.');
+  } catch (error) {
+    console.error('Error processing MQTT notification:', error.message);
+  }
 });
+app.use('/notifications', notificationRoutes);
 
 app.listen(3001, () => console.log('Notifications service running on port 3001'));
