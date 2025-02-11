@@ -19,7 +19,15 @@ connectRabbitMQ().then(({ channel }) => {
       if (msg) {
         const data = JSON.parse(msg.content.toString());
         console.log('Received message from RabbitMQ:', data);
+         // email message
+         const { message, email } = data;
 
+         if (!email) {
+           console.error('Error: No email defined');
+           channel.ack(msg);  // Acknowledge the message to avoid reprocessing
+           return;
+         }
+ 
         // notification processing
         try {
           const { message, email } = data;
@@ -56,4 +64,4 @@ mqttClient.on('message', async (topic, message) => {
 });
 app.use('/notifications', notificationRoutes);
 
-app.listen(3001, () => console.log('Notifications service running on port 3001'));
+app.listen(3002, () => console.log('Notifications service running on port 3002'));

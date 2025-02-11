@@ -1,4 +1,4 @@
-//Servicio para guardar notificaciones
+//notification save service
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 
@@ -9,7 +9,7 @@ const saveNotification = async (data) => {
     console.log('Notification saved to MongoDB');
   } catch (error) {
     console.error('Error saving notification:', error);
-    throw error; // Propaga el error para manejarlo en el controlador
+    throw error; 
   }
 };
 
