@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # MongoDB service 
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  # RabbitMQ service
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # amq port conection
+      - "15672:15672" # manage interface port
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  # aoo service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notifications-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+      - rabbitmq
+    environment:
+      MONGO_URI: mongodb://root:example@mongodb:27017/notifications?authSource=admin
+      MQTT_BROKER: mqtt://mqtt-broker
+      RABBITMQ_URI: amqp://guest:guest@rabbitmq:5672
+      EMAIL_USER: jeffersonllerena1@gmail.com
+      EMAIL_PASS: oolk plur eaus wnem
+    volumes:
+      - .:/usr/src/app
+    command: npm start
+
+volumes:
+  mongodb_data:
