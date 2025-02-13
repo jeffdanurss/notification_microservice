@@ -9,7 +9,7 @@ const notificationRoutes = require('./src/routes/notificationRoutes');
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+/*
 connectDB();
 // rabbit mq conection
 connectRabbitMQ().then(({ channel }) => {
@@ -65,3 +65,59 @@ mqttClient.on('message', async (topic, message) => {
 app.use('/notifications', notificationRoutes);
 
 app.listen(3002, () => console.log('Notifications service running on port 3002'));
+
+*/
+// Conexión a MongoDB
+connectDB().catch((error) => {
+  console.error('MongoDB connection error:', error.message);
+  process.exit(1); // Detener la aplicación si MongoDB no está disponible
+});
+
+// Conexión a RabbitMQ
+connectRabbitMQ()
+  .then((result) => {
+    if (!result) {
+      console.error('Failed to connect to RabbitMQ. Notifications will not be processed.');
+      return;
+    }
+
+    const { channel } = result;
+
+    console.log('Listening for messages on the "notifications" queue...');
+    channel.consume('notifications', async (msg) => {
+      if (msg) {
+        const data = JSON.parse(msg.content.toString());
+        console.log('Received message from RabbitMQ:', data);
+
+        const { message, email } = data;
+        if (!email) {
+          console.error('Error: No email defined');
+          channel.ack(msg); // Acknowledge the message to avoid reprocessing
+          return;
+        }
+
+        try {
+          await sendEmail(message, email);
+          await saveNotification({ message, email, status: 'Sent' });
+          console.log('Notification processed successfully.');
+        } catch (error) {
+          console.error('Error processing notification:', error.message);
+        } finally {
+          channel.ack(msg); // Acknowledge the message
+        }
+      }
+    });
+  })
+  .catch((error) => {
+    console.error('RabbitMQ connection error:', error.message);
+    process.exit(1); // Detener la aplicación si RabbitMQ no está disponible
+  });
+
+// Rutas
+app.use('/notifications', notificationRoutes);
+
+// Iniciar el servidor
+const PORT = process.env.PORT || 3002;
+app.listen(PORT, () => {
+  console.log(`Notifications service running on port ${PORT}`);
+});
